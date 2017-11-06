@@ -574,57 +574,26 @@ if( st[1][0] != '#' ) // Didn't find a hash?
 #ifdef USING_NEFARIOUS
 	if ((option == "HOST") || (option == "HOSTNAME"))
 	{
-		int admLevel = bot->getAdminAccessLevel(theUser);
-		if (!admLevel)
-		{
-			/* not an admin, return unknown command */
-			bot->Notice(theClient,
-				bot->getResponse(theUser,
-					language::invalid_option,
-					string("Invalid option.")));
-			return true;
-		}
-		
-		if (st.size() < 4)
-		{
-			bot->Notice(theClient, "SYNTAX: SET HOST [user] OFF|<Hostname>");
-			return false;
-		}
-
-		value = string_upper(st[3]);
-		string userHost = string(st[3]);
-		sqlUser* targetUser = bot->getUserRecord(st[2]);
-		if (!targetUser)
-		{
-			bot->Notice(theClient,
-				bot->getResponse(theUser,
-					language::not_registered,
-					string("The user %s doesn't appear to be registered.")).c_str(),
-				st[2].c_str());
-			return true;
-		}
-		
-		
 		if (value == "OFF")
 		{
 			//theClient->clearFakeHost();
-			targetUser->setHostName(string());
-			targetUser->commit(theClient);
+			theUser->setHostName(string());
+			theUser->commit(theClient);
 			bot->Notice(theClient, "Your host was successfully cleared. Please reconnect to apply your original host.");
 		}
 		else
 		{
-			if (userHost.size() > 128)
+			if (st[2].size() > 128)
 			{
 				bot->Notice(theClient, "Hostname can be maximum 128 characters long.");
 				return true;
 			}
-			if ((userHost.size() < 3) || (!validHostName(userHost)))
+			if ((st[2].size() < 3) || (!validHostName(st[2])))
 			{
 				bot->Notice(theClient, "Invalid hostname provided. A valid hostname has at least a 2 characters long domain, and contains at least one dot.");
 				return true;
 			}
-			if (string_lower(userHost).find(string_lower(iClient::getHiddenHostSuffix())) != string::npos)
+			if (string_lower(st[2]).find(string_lower(iClient::getHiddenHostSuffix())) != string::npos)
 			{
 			     bot->Notice(theClient, "Using the hidden-host-suffix in your hostname is not allowed.");
 			     return true;
@@ -632,36 +601,28 @@ if( st[1][0] != '#' ) // Didn't find a hash?
 #endif
 
 #ifdef VALIDATE_SET_HOSTNAME
-			if (!checkAllValidChars(userHost))
+			if (!checkAllValidChars(st[2]))
 			{
 			    bot->Notice(theClient, "Your hostname must be made of letters (A-Z, a-z) and numbers (0-9).");
 			    return true;
 			}
 #endif
-			if (userHost == "evilnet.org" && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** evilnet.org host only for IRCOps and Service Staff."); return true; }
-			if (!match("*.evilnet.org", userHost) && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** evilnet.org host only for IRCOps and Service Staff."); return true; }
-			if (userHost == "nullrewted.org" && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** nullrewted.org host only for IRCOps and Service Staff."); return true; }
-			if (!match("*.nullrewted.org", userHost) && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** *.nullrewted.org host only for IRCOps and Service Staff."); return true; }
-			if (userHost == "underx.org" && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** underx.org host only for IRCOps and Service Staff."); return true; }
-			if (userHost == "undernet.org" && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** undernet.org host not available"); return true; }
-                        if (userHost.rfind("blackirc.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED***"); return true; }
-			if (userHost.rfind("relaydb.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** RelayDB Host "); return true; }
-			 if (userHost.rfind("cock.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** not allowed bad word in host "); return true; }
-			 if (userHost.rfind("fuck.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** not allowed bad word in host "); return true; }
-			 if (userHost.rfind("bitch.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** not allowed bad word in host "); return true; }
-			 if (userHost.rfind("sex.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** not allowed bad word in host "); return true; }
-			targetUser->setHostName(userHost);
-			targetUser->commit(theClient);
-
-			//Deop the all newly suspended clients
-			for (sqlUser::networkClientListType::iterator cliPtr = targetUser->networkClientList.begin();
-				cliPtr != targetUser->networkClientList.end(); ++cliPtr)
-			{
-				//bot->Notice((*cliPtr), "Your user account has been globally suspended.");
-				server->SendOutFakeHost((*cliPtr), targetUser->getHostName().c_str(), bot);
-				bot->Notice((*cliPtr), "Your hostname is now set to %s", targetUser->getHostName().c_str());
-			}
-
+			if (st[2] == "evilnet.org" && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** evilnet.org host only for IRCOps and Service Staff."); return true; }
+			if (!match("*.evilnet.org", st[2]) && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** evilnet.org host only for IRCOps and Service Staff."); return true; }
+			if (st[2] == "nullrewted.org" && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** nullrewted.org host only for IRCOps and Service Staff."); return true; }
+			if (!match("*.nullrewted.org", st[2]) && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** *.nullrewted.org host only for IRCOps and Service Staff."); return true; }
+			if (st[2] == "underx.org" && !(bot->getAdminAccessLevel(theUser) >= 1 || theClient->isOper()) ) { bot->Notice(theClient, "***ACCESS DENIED*** underx.org host only for IRCOps and Service Staff."); return true; }
+			if (st[2] == "undernet.org" && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** undernet.org host not available"); return true; }
+                        if (st[2].rfind("blackirc.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED***"); return true; }
+			if (st[2].rfind("relaydb.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** RelayDB Host "); return true; }
+			 if (st[2].rfind("cock.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** not allowed bad word in host "); return true; }
+			 if (st[2].rfind("fuck.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** not allowed bad word in host "); return true; }
+			 if (st[2].rfind("bitch.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** not allowed bad word in host "); return true; }
+			 if (st[2].rfind("sex.") != std::string::npos && bot->getAdminAccessLevel(theUser) < 1000) { bot->Notice(theClient, "***ACCESS DENIED*** not allowed bad word in host "); return true; }
+			theUser->setHostName(st[2]);
+			theUser->commit(theClient);
+			server->SendOutFakeHost(theClient, theUser->getHostName().c_str(), bot);
+			bot->Notice(theClient, "Your hostname is now set to %s", theUser->getHostName().c_str());
 		}
 		return true;
 	}
